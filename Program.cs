@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MasterMindGame
+namespace ConsoleMastermindGame
 {
 	class Program
 	{
@@ -18,32 +18,37 @@ namespace MasterMindGame
 		{
 			//Intro Sequence & Game Setup
 			Console.WriteLine("Welcome to my world of Mastermind Gaming!");
-			Console.WriteLine("You have 10 changes to guess the answer correctly\n");
+			Console.WriteLine("You have 10 chances to guess the answer correctly\n");
 			System.Threading.Thread.Sleep(2000);
 
 			int intGuesses = 10;
 			int intSecretCode = GenerateFourDigitCode();
 
 			bool winState = false;
+			bool showValidationMessage = false;
 
-			bool[] guessAry = { false, false, false, false };
-			bool[] answerAry = { false, false, false, false };
+
 			Console.Clear();
 
-			//Guesses Loop
+
 			while (intGuesses > 0)
 			{
 				if (intGuesses != 10)
 				{
 					Console.WriteLine("Guesses Remaining: " + intGuesses.ToString());
 				}
-
+				if (showValidationMessage)
+				{
+					Console.WriteLine("\nMake sure your input is between 1111 and 6666, with each digit being no larger that 6.");
+					System.Threading.Thread.Sleep(2000);
+					showValidationMessage = false;
+				}
 				Console.WriteLine("\nMake your guess:\n");
 				int intUserGuess = 0;
 				string strUserGuess = Console.ReadLine();
 
 
-				if (isGuessCorrectFormat(ref strUserGuess, intSecretCode))
+				if (IsGuessCorrectFormat(ref strUserGuess, intSecretCode))
 				{
 					intUserGuess = Int32.Parse(strUserGuess);
 
@@ -53,8 +58,8 @@ namespace MasterMindGame
 						break;
 					}
 
-					int inPlaceCount = getInPlaceDigitCount(intUserGuess, guessAry, answerAry, intSecretCode);
-					int outOfPlaceCount = getOutOfPlaceDigitCount(intUserGuess, guessAry, answerAry, intSecretCode);
+					int inPlaceCount = GetInPlaceDigitCount(intUserGuess.ToString(), intSecretCode.ToString());
+					int OutPlaceDigitCount = GetOutPlaceDigitCount(intUserGuess.ToString(), intSecretCode.ToString());
 
 					string strFeedback = "\nScore: ";
 
@@ -74,7 +79,7 @@ namespace MasterMindGame
 							strFeedback += "+++";
 							break;
 					}
-					switch (outOfPlaceCount)
+					switch (4 - inPlaceCount - OutPlaceDigitCount)  // out place digits are digits which are not existing and inplace are digits which are in correct place
 					{
 						case 0:
 							break;
@@ -97,98 +102,61 @@ namespace MasterMindGame
 					Console.WriteLine("--------------------\n");
 					intGuesses--;
 				}
-				else 
-					Console.WriteLine("Make sure your input is between 1111 and 6666, with each digit being no larger that 6.");
+				else
+				{
+					showValidationMessage = true;
+					intGuesses--;
+				}
 			}
 			if (winState)
 			{
 				Console.WriteLine("--------------------\n");
-				Console.WriteLine("\nYou nailed it!");
+				Console.WriteLine("\nYou solved it!");
 			}
 			else
 			{
-				Console.WriteLine("\nBetter luck next time, You lose. :(\n");
+				Console.WriteLine("\nYou lose. :(\n");
 				Console.WriteLine("The code was " + intSecretCode);
 			}
 			Console.ReadLine();
 		}
-
-
 		#region Functions
 
 		/// Calculates the number of digits that are correct and in place.
-		private static int getInPlaceDigitCount(int intUserGuess, bool[] guessAry, bool[] answerAry, int intSecretCode)
+
+		private static int GetInPlaceDigitCount(string intUserGuess, string intSecretCode)
 		{
-			for (int i = 0; i < 4; i++)
-			{
-				guessAry[i] = false;
-				answerAry[i] = false;
-			}
 
 			int inPlaceCount = 0;
-			int guessDigit = 0;
-			int randDigit = 0;
-			int tempGuess = intUserGuess;
-			int tempRand = intSecretCode;
-
 			for (int i = 0; i < 4; i++)
 			{
-				guessDigit = tempGuess % 10;
-				tempGuess = tempGuess / 10;
-				randDigit = tempRand % 10;
-				tempRand = tempRand / 10;
-
-				if (guessDigit == randDigit)
+				if (intUserGuess[i] == intSecretCode[i])
 				{
-					guessAry[i] = true;
-					answerAry[i] = true;
 					inPlaceCount++;
 				}
 			}
 			return inPlaceCount;
 		}
 
-
-		/// Calulates the number of digits that are correct, but out of place
-		public static int getOutOfPlaceDigitCount(int userGuess, bool[] guessAry, bool[] answerAry, int intSecretCode)
+		/// Calculates the number of digits that are not existing.
+		private static int GetOutPlaceDigitCount(string intUserGuess, string intSecretCode)
 		{
-			int outOfPlaceCount = 0;
-			int guessDigit;
-			int randDigit;
-			int tempRand = intSecretCode;
 
+			int outPlaceCount = 0;
 			for (int i = 0; i < 4; i++)
 			{
-				guessDigit = userGuess % 10;
-				userGuess = userGuess / 10;
-				randDigit = tempRand % 10;
-				tempRand = intSecretCode;
-				if (guessAry[i] == false)
+				if (intUserGuess[i] != intSecretCode[i] && !intSecretCode.ToString().Contains(intUserGuess[i]))
 				{
-					for (int j = 0; j < 4; j++)
-					{
-						randDigit = tempRand % 10;
-						tempRand = tempRand / 10;
-						if (answerAry[j] == false)
-						{
-							if (guessDigit == randDigit)
-							{
-								outOfPlaceCount++;
-								guessAry[i] = true;
-								answerAry[j] = true;
-								break;
-							}
-						}
-					}
+					outPlaceCount++;
 				}
 			}
-			return outOfPlaceCount;
+			return outPlaceCount;
 		}
 
 
 		/// Checks to see if the user guess is correct.
-		/// <param name="strUserGuess">The string representation of the user entered guess, passed by reference so that the string is updated in Main.</param>
-		private static bool isGuessCorrectFormat(ref string strUserGuess, int intSecretCode)
+
+		private static bool IsGuessCorrectFormat(ref string strUserGuess, int intSecretCode)
 		{
 			int intUserGuess = 0;
 			try
@@ -196,6 +164,10 @@ namespace MasterMindGame
 				intUserGuess = Int32.Parse(strUserGuess);
 				int guessDigit = 0;
 				int tempGuess = intUserGuess;
+				if (tempGuess < 1000 || tempGuess > 6666 || strUserGuess.Contains('0'))
+				{
+					return false;
+				}
 				for (int i = 0; i < 4; i++)
 				{
 					guessDigit = tempGuess % 10;
@@ -207,19 +179,13 @@ namespace MasterMindGame
 			}
 			catch
 			{
-				Console.WriteLine("\nMake sure your input is between 1111 and 6666, with each digit being no larger that 6.");
-				System.Threading.Thread.Sleep(2000);
-				Console.WriteLine("\nMake your guess:\n");
-				strUserGuess = Console.ReadLine();
-				if (isGuessCorrectFormat(ref strUserGuess, intSecretCode))
-					return true;
 				return false;
 			}
 			return true;
 		}
 
-
 		/// Generates a code from 1111 to 6666
+
 		private static int GenerateFourDigitCode()
 		{
 			string strCraftedNum = "";
@@ -227,7 +193,7 @@ namespace MasterMindGame
 			int length = 4;
 			for (int i = 0; i < length; i++)
 			{
-				strCraftedNum += srand.Next(MIN_INDIV_NUMBER, MAX_INDIV_NUMBER);
+				strCraftedNum += srand.Next(MIN_INDIV_NUMBER, MAX_INDIV_NUMBER + 1);
 			}
 			return Int32.Parse(strCraftedNum);
 		}
